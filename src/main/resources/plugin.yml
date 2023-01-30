@@ -1,0 +1,7 @@
+name: Weapons
+version: '${project.version}'
+main: com.seailz.weapons.Weapons
+authors: [ Seailz ]
+api-version: 1.13
+description: thing for bluxles smp idk
+website: www.seailz.com
