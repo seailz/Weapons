@@ -18,7 +18,7 @@ public interface Weapon {
     /**
      * The second effect of the weapon.
      */
-    void effect2(Location loc);
+    void effect2(Location loc, Player player);
 
     /**
      * Check if the item is the weapon.

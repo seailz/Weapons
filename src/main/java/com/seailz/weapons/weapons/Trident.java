@@ -1,8 +1,10 @@
 package com.seailz.weapons.weapons;
 
+import com.seailz.weapons.Weapons;
 import com.seailz.weapons.utils.C;
 import com.seailz.weapons.utils.Sphere;
 import com.seailz.weapons.weapons.i.Weapon;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -47,6 +49,8 @@ import java.util.List;
 public class Trident implements Weapon, Listener {
     private final int ITEM_ID = 0;
     private final Material ITEM_MATERIAL = Material.TRIDENT;
+    private boolean effect1IsOnCooldown = false;
+    private boolean effect2IsOnCooldown = false;
 
     /**
      * Effect 1 for this weapon is
@@ -57,6 +61,10 @@ public class Trident implements Weapon, Listener {
      */
     @Override
     public void effect1(Location location, Player player) {
+        if (effect1IsOnCooldown) {
+            player.sendMessage(C.t("&7This effect is currently on &ccooldown&7."));
+            return;
+        }
         List<Block> blocks = new ArrayList<>();
         int radius = 3;
         for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
@@ -88,22 +96,34 @@ public class Trident implements Weapon, Listener {
                 p.setVelocity(new Vector(1, 1, 1));
             }
         }
+
+        effect1IsOnCooldown = true;
+        Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
+            effect1IsOnCooldown = false;
+            player.sendMessage(C.t("&c&lGround Explosion&7 is recharged!"));
+        }, 100L);
     }
 
     @Override
-    public void effect2(Location loc) {
+    public void effect2(Location loc, Player player) {
+        if (effect2IsOnCooldown) {
+            player.sendMessage(C.t("&7This effect is currently on &ccooldown&7."));
+            return;
+        }
         List<Location> locations = Sphere.generateSphere(loc, Material.ICE, 5, true);
         // after 5 seconds, get rid of the sphere
-        new Thread(() -> {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
             for (Location location : locations) {
-                location.getBlock().setType(Material.AIR);
+                Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
+                    location.getBlock().setType(Material.AIR);
+                }, 20L);
             }
-        }).start();
+        }, 100L);
+        effect2IsOnCooldown = true;
+        Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
+            effect2IsOnCooldown = false;
+            player.sendMessage(C.t("&b&lIce Bubble&7 is recharged!"));
+        }, 200L);
     }
 
     @EventHandler
@@ -111,7 +131,7 @@ public class Trident implements Weapon, Listener {
         if (!isItem(event.getItem())) return;
         if (event.getEnchantsToAdd().containsKey(Enchantment.CHANNELING)) {
             event.setCancelled(true);
-            event.getEnchanter().sendMessage(C.t("&cYou cannot enchant this item with channeling!"));
+            event.getEnchanter().sendMessage(C.t("&7You cannot enchant this item with &cchanneling&7!"));
             return;
         }
 
@@ -135,8 +155,7 @@ public class Trident implements Weapon, Listener {
     public void onRightClick(PlayerInteractEvent event) {
         if (!isItem(event.getPlayer().getInventory().getItemInMainHand())) return;
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        effect2(event.getPlayer().getLocation());
-        System.out.println("effect2");
+        effect2(event.getPlayer().getLocation(), event.getPlayer());
     }
 
     @Override
