@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Trident weapon.
@@ -55,7 +56,7 @@ public class Trident implements Weapon, Listener {
     @Override
     public void effect1(Location location, Player player) {
         List<Block> blocks = new ArrayList<>();
-        int radius = 10;
+        int radius = 6;
         for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
             for (int y = location.getBlockY() - radius; y <= location.getBlockY() + radius; y++) {
                 for (int z = location.getBlockZ() - radius; z <= location.getBlockZ() + radius; z++) {
@@ -81,7 +82,7 @@ public class Trident implements Weapon, Listener {
 
         for (Player p : location.getWorld().getPlayers()) {
             if (p.getLocation().distance(location) <= 10) {
-                p.setVelocity(new Vector(10, 10, 10));
+                p.setVelocity(new Vector(1, 1, 1));
             }
         }
     }

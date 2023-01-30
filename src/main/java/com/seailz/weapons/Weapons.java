@@ -8,6 +8,7 @@ public final class Weapons extends BasePlugin {
 
     @Override
     public void onEnable() {
+        super.onEnable();
         // Plugin startup logic
         registerListeners(
                 new Trident()
