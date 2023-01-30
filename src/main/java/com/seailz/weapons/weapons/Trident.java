@@ -1,6 +1,7 @@
 package com.seailz.weapons.weapons;
 
 import com.seailz.weapons.utils.C;
+import com.seailz.weapons.utils.Sphere;
 import com.seailz.weapons.weapons.i.Weapon;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -11,7 +12,9 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,7 +23,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Trident weapon.
@@ -56,7 +58,7 @@ public class Trident implements Weapon, Listener {
     @Override
     public void effect1(Location location, Player player) {
         List<Block> blocks = new ArrayList<>();
-        int radius = 6;
+        int radius = 3;
         for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
             for (int y = location.getBlockY() - radius; y <= location.getBlockY() + radius; y++) {
                 for (int z = location.getBlockZ() - radius; z <= location.getBlockZ() + radius; z++) {
@@ -72,12 +74,13 @@ public class Trident implements Weapon, Listener {
         for (Block b : blocks) {
             Location bLoc = b.getLocation();
             x = bLoc.getX() - location.getX();
-            y = bLoc.getY() - location.getY() + 0.5;
+            y = bLoc.getY() - location.getY() + 1;
             z = bLoc.getZ() - location.getZ();
 
             FallingBlock fb = w.spawnFallingBlock(bLoc, b.getType(), (byte) b.getData());
             fb.setDropItem(false);
             fb.setVelocity(new Vector(x, y, z));
+            b.setType(Material.AIR);
         }
 
         for (Player p : location.getWorld().getPlayers()) {
@@ -88,8 +91,19 @@ public class Trident implements Weapon, Listener {
     }
 
     @Override
-    public void effect2() {
-
+    public void effect2(Location loc) {
+        List<Location> locations = Sphere.generateSphere(loc, Material.ICE, 5, true);
+        // after 5 seconds, get rid of the sphere
+        new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            for (Location location : locations) {
+                location.getBlock().setType(Material.AIR);
+            }
+        }).start();
     }
 
     @EventHandler
@@ -115,6 +129,14 @@ public class Trident implements Weapon, Listener {
         if (!isItem(event.getPlayer().getInventory().getItemInMainHand())) return;
         if (!event.isSneaking()) return;
         effect1(event.getPlayer().getLocation(), event.getPlayer());
+    }
+
+    @EventHandler
+    public void onRightClick(PlayerInteractEvent event) {
+        if (!isItem(event.getPlayer().getInventory().getItemInMainHand())) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        effect2(event.getPlayer().getLocation());
+        System.out.println("effect2");
     }
 
     @Override
