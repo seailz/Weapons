@@ -1,6 +1,8 @@
 # Weapons
 This code is a bit of a mess, but it's a weapons plugin basically. 
-<br>Created for my friend.
+<br>Created for my friend.<p>
+
+I'm not gonna provide a jar for this plugin as it's mainley intended to be private, but it's pretty easy to get a jar anyway.
 
 Weapons that are included in this plugin:
 <ul>
