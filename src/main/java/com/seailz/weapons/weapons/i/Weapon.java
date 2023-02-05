@@ -27,6 +27,16 @@ public interface Weapon {
      */
     boolean isItem(@NotNull ItemStack item);
 
+    default boolean searchItemLoreForId(ItemStack item) {
+        if (item.getItemMeta() == null || item.getItemMeta().getLore() == null) return false;
+        return item.getItemMeta().getLore()
+                .get(0)
+                .split("Item: ")[1]
+                .equals(itemId() + "");
+    }
+
+    int itemId();
+
     /**
      * Transform the item into a weapon
      * @param item the item to transform

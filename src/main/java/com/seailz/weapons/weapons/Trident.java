@@ -15,7 +15,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
@@ -24,6 +28,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -52,6 +57,8 @@ public class Trident implements Weapon, Listener {
     private boolean effect1IsOnCooldown = false;
     private boolean effect2IsOnCooldown = false;
 
+    private static final List<Player> explosionDamagePrevented = new ArrayList<>();
+
     /**
      * Effect 1 for this weapon is
      * <pre>
@@ -65,43 +72,56 @@ public class Trident implements Weapon, Listener {
             player.sendMessage(C.t("&7This effect is currently on &ccooldown&7."));
             return;
         }
-        List<Block> blocks = new ArrayList<>();
-        int radius = 3;
-        for (int x = location.getBlockX() - radius; x <= location.getBlockX() + radius; x++) {
-            for (int y = location.getBlockY() - radius; y <= location.getBlockY() + radius; y++) {
-                for (int z = location.getBlockZ() - radius; z <= location.getBlockZ() + radius; z++) {
-                    blocks.add(location.getWorld().getBlockAt(x, y, z));
-                }
-            }
-        }
-
-        double x = 10;
-        double y = 10;
-        double z = 10;
-        World w = location.getWorld();
-        for (Block b : blocks) {
-            Location bLoc = b.getLocation();
-            x = bLoc.getX() - location.getX();
-            y = bLoc.getY() - location.getY() + 1;
-            z = bLoc.getZ() - location.getZ();
-
-            FallingBlock fb = w.spawnFallingBlock(bLoc, b.getType(), (byte) b.getData());
-            fb.setDropItem(false);
-            fb.setVelocity(new Vector(x, y, z));
-            b.setType(Material.AIR);
-        }
 
         for (Player p : location.getWorld().getPlayers()) {
             if (p.getLocation().distance(location) <= 10) {
-                p.setVelocity(new Vector(1, 1, 1));
+                if (!p.equals(player)) p.setVelocity(new Vector(1, 1, 1));
+                if (!p.equals(player)) p.setHealth(p.getHealth() - 10);
             }
         }
+        // make player invincible to explosions
+
+        explosionDamagePrevented.add(player);
+        player.getWorld().createExplosion(location, 4, true);
+        Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
+            explosionDamagePrevented.remove(player);
+        }, 10L);
 
         effect1IsOnCooldown = true;
         Bukkit.getScheduler().runTaskLater(Weapons.getInst(), () -> {
             effect1IsOnCooldown = false;
             player.sendMessage(C.t("&c&lGround Explosion&7 is recharged!"));
         }, 100L);
+    }
+
+    @EventHandler
+    public void onPlayerDamage(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player)) return;
+        Player player = (Player)  e.getEntity();
+        if (explosionDamagePrevented.contains(player) && (e.getCause() == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION || e.getCause() == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION)) {
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onExplosion(BlockExplodeEvent e) {
+        List<Block> blocks = e.blockList();
+
+        double x = 0;
+        double y = 0;
+        double z = 0;
+        World w = e.getBlock().getWorld();
+        for (int i = 0; i < e.blockList().size();i++){
+            Block b = e.blockList().get(i);
+            Location bLoc = b.getLocation();
+            x = bLoc.getX() -  e.getBlock().getX();
+            y = bLoc.getY() -  e.getBlock().getY() + 0.5;
+            z = bLoc.getZ() -  e.getBlock().getZ();
+            FallingBlock fb = w.spawnFallingBlock(bLoc, b.getType(), (byte)b.getData());
+            fb.setDropItem(false);
+            fb.setVelocity(new Vector(x,y,z));
+        }
+
     }
 
     @Override
@@ -145,6 +165,14 @@ public class Trident implements Weapon, Listener {
     }
 
     @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (event.getBlock().getState().hasMetadata("isBreakable1")) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(C.t("&b&lIce Bubble&7 can't be broken!"));
+        }
+    }
+
+    @EventHandler
     public void onSneak(PlayerToggleSneakEvent event) {
         if (!isItem(event.getPlayer().getInventory().getItemInMainHand())) return;
         if (!event.isSneaking()) return;
@@ -160,12 +188,12 @@ public class Trident implements Weapon, Listener {
 
     @Override
     public boolean isItem(@NotNull ItemStack item) {
-        if (item.getItemMeta() == null) return false;
-        if (item.getItemMeta().getLore() == null) return false;
-        return item.getItemMeta().getLore()
-                .get(0)
-                .split("Item: ")[1]
-                .equals(ITEM_ID + "");
+        return searchItemLoreForId(item);
+    }
+
+    @Override
+    public int itemId() {
+        return ITEM_ID;
     }
 
     @Override

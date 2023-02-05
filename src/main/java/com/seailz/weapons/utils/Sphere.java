@@ -2,8 +2,13 @@ package com.seailz.weapons.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.seailz.weapons.Weapons;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import sun.jvm.hotspot.oops.Metadata;
 
 /**
  * @author Cammeritz
@@ -47,6 +52,7 @@ public class Sphere {
 
         for (Location circleBlock : circleBlocks) {
             circleBlock.getBlock().setType(block);
+            circleBlock.getBlock().getState().setMetadata("isBreakable1", new FixedMetadataValue(Weapons.getInst(), false));
         }
 
 
