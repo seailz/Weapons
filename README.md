@@ -14,4 +14,14 @@ Weapons that are included in this plugin:
       <li>Sneak: Ground Smash - smashes the ground and causes a mini explosion and some blocks to get thrown about, also launches nearby players back. <br>5 second cooldown.</li>
     </ul>
   </li>
+  <li>
+   Enhanced Netherite Armor
+   <br>No actions.
+   Offers +2 damage reduction, and a 50% chance of degrading durability instead of the default 100%.
+   </li>
+   <li>
+   Enhanced Netherite Weapon (Sword/Axe)
+   <br>No actions.
+   Offers +1 attack damage.
+   </li>
 </ul>
